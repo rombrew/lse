@@ -1,4 +1,4 @@
-# Least Squares Enhanced
+# Least Squares Estimate
 
 LSE is a linear least squares solver library written in C.
 
@@ -8,21 +8,17 @@ LSE is aimed to be used in signal processing on small embedded systems with
 single precision FPU. The main goals are low precision losses on large datasets
 and low memory footprint.
 
-Typycal usage scenario is about ~10 unknown parameters and over ~1kk of
+Typical usage scenario is about ~10 unknown parameters and over ~1kk of
 measurements.
 
-## Usage
+## Features
 
-The main features of the LSE library:
-
-* Compute least squares solution by QR transformation.
-* Solve full-rank linear equation systems.
-* Estimate standard deviation.
-* Add regularization to solve ill-posed problems.
-* Estimate largest and smallest singular values.
+* Ordinary least squares (LS) solver using QR transformation.
+* Low precision losses on large datasets.
+* Able to solve rank deficient ill-posed problem using l2 regularization.
+* Standard deviation (STD) estimate.
+* Largest and smallest singular values estimate.
 * Static and dynamic memory allocation.
-
-See the API description in LSE header file and examples.
 
 ## Approach
 
@@ -78,6 +74,27 @@ To get the final solution we merge all cascade \R(i) matrices into the one.
 	R = qr([R(0); R(1); R(2); ...])
 
 We use Givens rotations to implement QR procedures.
+
+## Example
+
+See the API description in LSE header file and testbench code.
+
+	lse_t       ls;
+	
+	lse_construct(&ls, LSE_CASCADE_MAX, 2, 1);
+	
+	for (...) {
+	
+		v[0] = (lse_float_t) x[0];
+		v[1] = (lse_float_t) x[1];
+		v[2] = (lse_float_t) z[0];
+	
+		lse_insert(&ls, v);
+	}
+	
+	lse_solve(&ls);
+	
+	printf("sol %.4f %.4f\n", ls.sol.m[0], ls.sol.m[1]);
 
 ## Status
 
