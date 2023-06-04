@@ -197,7 +197,7 @@ void lse_basic_test()
 
 	lse_cond(&ls, 4);
 
-	lse_ridge(&ls, ls.n_len_of_x * ls.l_max * LSE_EPSF);
+	lse_ridge(&ls, ls.n_len_of_x * ls.svd.max * LSE_EPSF);
 	lse_solve(&ls);
 
 	LSE_assert_approx(ls.sol.m[0], 1., 10.);
@@ -277,8 +277,8 @@ void lse_large_test(int n_full)
 
 	lse_cond(ls, 4);
 
-	LSE_assert_approx(ls->l_max, n_full, 100. * n_full);
-	LSE_assert_approx(ls->l_min, 1., 100.);
+	LSE_assert_approx(ls->svd.max, n_full, 100. * n_full);
+	LSE_assert_approx(ls->svd.min, 1., 100.);
 
 	lse_solve(ls);
 
@@ -456,7 +456,7 @@ void lse_bench()
 	lse_cond(&ls, 4);
 
 	printf("std  % .8lE % .8lE % .8lE\n", ls.std.m[0], ls.std.m[1], ls.std.m[2]);
-	printf("cond % .8lE\n", ls.l_max / ls.l_min);
+	printf("cond % .8lE\n", ls.svd.max / ls.svd.min);
 }
 
 int main(int argc, char *argv[])
