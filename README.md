@@ -17,7 +17,7 @@ measurements.
 * Low precision losses on large datasets.
 * Able to solve rank deficient ill-posed problem using l2 regularization.
 * Standard deviation (STD) estimate.
-* Largest and smallest singular values estimate.
+* Largest and smallest singular values approximation.
 * Static and dynamic memory allocation.
 
 ## Approach
@@ -53,27 +53,28 @@ be obtained by the sequential QR updating.
 	R = qrupdate([R; x(i) z(i)]).
 
 Thus we do not need to store all dataset in a tall skinny matrix. But that is
-not enough. On large dataset we loss precision more and more due to roundoff
+not all. On large dataset we loss precision more and more due to roundoff
 errors at each QR update. To overcome this we propose the cascading update.
 
 Keep aggregating data in \R(0) until number of aggregated rows reaches some
 threshold number \n. After that merge \R(0) into the next level matrix \R(1).
 
-	R(1) = qr([R(1); R(0)]).
+	R(1) = qrupdate([R(1); R(0)]).
 
 Then reset \R(0) and continue to aggregate data in \R(0). When number of
 aggregated rows in \R(i) reaches some threshold number \n we merge \R(i) into
 the next level matrix \R(i+1).
 
-The number of levels is selected depending on desired error compensation and
+The number of cascades is selected depending on desired error compensation and
 available amount of memory. The threshold number \n increases each time when
 top-level \R(i) matrix is updated to produce balanced cascades.
 
 To get the final solution we merge all cascade \R(i) matrices into the one.
 
-	R = qr([R(0); R(1); R(2); ...])
+	R = qrupdate([R(0); R(1); R(2); ...])
 
-We use Givens rotations to implement QR procedures.
+We use fast Givens transformation to implement QR procedures. Thus the square
+root is not used to find the solution.
 
 ## Example
 
@@ -98,5 +99,5 @@ See the API description in LSE header file and testbench code.
 
 ## Status
 
-Alfa version.
+We are using LSE in motor control software on Cortex-M4F embedded processor.
 
