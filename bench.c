@@ -225,13 +225,13 @@ void lse_basic_test()
 
 	lse_insert(&ls, v);
 
-	lse_cond(&ls, 4);
+	lse_esv(&ls, 4);
 
 	printf("\ncase  ---- basic ridge ----\n");
 
-	printf("cond % .8lE % .8lE\n", ls.svd.min, ls.svd.max);
+	printf("esv  % .8lE % .8lE\n", ls.esv.min, ls.esv.max);
 
-	lse_ridge(&ls, ls.n_len_of_x * ls.svd.max * LSE_EPSF);
+	lse_ridge(&ls, ls.n_len_of_x * ls.esv.max * LSE_EPSF);
 	lse_solve(&ls);
 
 	printf("sol  % .8lE % .8lE % .8lE\n", ls.sol.m[0],
@@ -323,12 +323,12 @@ void lse_large_test(int n_full)
 		LSE_assert_approx(ls->sol.m[i], 1. / (double) n_full, 10.);
 	}
 
-	lse_cond(ls, 4);
+	lse_esv(ls, 4);
 
-	printf("cond % .8lE % .8lE\n", ls->svd.min, ls->svd.max);
+	printf("esv  % .8lE % .8lE\n", ls->esv.min, ls->esv.max);
 
-	LSE_assert_approx(ls->svd.max, n_full, 100. * n_full);
-	LSE_assert_approx(ls->svd.min, 1., 100.);
+	LSE_assert_approx(ls->esv.max, n_full, 100. * n_full);
+	LSE_assert_approx(ls->esv.min, 1., 100.);
 
 	free(ls);
 	free(v);
@@ -473,17 +473,17 @@ void lse_random_test()
 
 	for (n = 0; n < 5000000; ++n) {
 
-		x[0] = lfg_gauss() * 1.;
-		x[1] = lfg_gauss() * 1.;
-		x[2] = lfg_gauss() * 1.;
-		x[3] = lfg_gauss() * 1.;
-		x[4] = lfg_gauss() * 1.;
+		x[0] = lfg_rand() * 1.;
+		x[1] = lfg_rand() * 1.;
+		x[2] = lfg_rand() * 1.;
+		x[3] = lfg_rand() * 1.;
+		x[4] = lfg_rand() * 1.;
 
-		z[0] = lfg_gauss() * 5E-4;
-		z[1] = lfg_gauss() * 5E-4;
-		z[2] = lfg_gauss() * 5E-4;
-		z[3] = lfg_gauss() * 5E-4;
-		z[4] = lfg_gauss() * 5E-4;
+		z[0] = 0.;
+		z[1] = 0.;
+		z[2] = 0.;
+		z[3] = 0.;
+		z[4] = 0.;
 
 		for (i = 0; i < 5; ++i) {
 
@@ -535,9 +535,9 @@ void lse_random_test()
 			ls.std.m[0], ls.std.m[1], ls.std.m[2],
 			ls.std.m[3], ls.std.m[4]);
 
-	lse_cond(&ls, 4);
+	lse_esv(&ls, 4);
 
-	printf("cond % .8lE\n\n", ls.svd.max / ls.svd.min);
+	printf("cond % .8lE\n\n", ls.esv.max / ls.esv.min);
 }
 
 int main(int argc, char *argv[])

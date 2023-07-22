@@ -8,12 +8,21 @@ GDB	= gdb
 MK	= mkdir -p
 RM      = rm -rf
 
-CFLAGS	= -std=gnu99 -pipe -Wall -O3 -flto=auto -g3
+CFLAGS	= -std=gnu99 -Wall -O3 -flto=auto -g3 -pipe
+
+CFLAGS  += -fno-math-errno \
+	   -ffinite-math-only \
+	   -fno-signed-zeros \
+	   -fno-trapping-math \
+	   -fno-associative-math \
+	   -fno-reciprocal-math \
+	   -ffp-contract=fast
+
 LFLAGS	= -lm
 
-OBJS	= lse.o lfg.o
+OBJS	= bench.o lse.o lfg.o
 
-BENCH_OBJS = $(addprefix $(BUILD)/, $(OBJS) bench.o)
+BENCH_OBJS = $(addprefix $(BUILD)/, $(OBJS))
 
 all: $(BENCH)
 

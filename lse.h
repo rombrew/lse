@@ -11,6 +11,11 @@
  * */
 #define LSE_CASCADE_MAX			4
 
+/* Define whether to use fast Givens transformation in QR update. Typycal this
+ * is useful for fairly large matrix sizes. Also consumes a few of memory.
+ * */
+#define LSE_FAST_TRANSFORM		1
+
 /* Define native floating-point type to use inside of LSE.
  * */
 typedef float		lse_float_t;
@@ -33,9 +38,11 @@ typedef struct {
 	 * */
 	lse_float_t	*m;
 
+#if LSE_FAST_TRANSFORM != 0
 	/* Content of the scale diagonal matrix.
 	 * */
 	lse_float_t	*d;
+#endif /* LSE_FAST_TRANSFORM */
 }
 lse_upper_t;
 
@@ -90,19 +97,23 @@ typedef struct {
 	 * */
 	lse_row_t	std;
 
-	/* Approximate singular values of \Rx matrix.
+	/* Approximate extremal singular values of \Rx.
 	 * */
 	struct {
 
 		lse_float_t	min;
 		lse_float_t	max;
 	}
-	svd;
+	esv;
 
 	/* We allocate the maximal amount of memory.
 	 * */
 	lse_float_t	vm[LSE_CASCADE_MAX * LSE_FULL_MAX * (LSE_FULL_MAX + 1) / 2
+
+#if LSE_FAST_TRANSFORM != 0
 			 + LSE_CASCADE_MAX * LSE_FULL_MAX
+#endif /* LSE_FAST_TRANSFORM */
+
 			 + LSE_FULL_MAX * LSE_FULL_MAX / 4 + LSE_FULL_MAX / 2 + 1];
 }
 lse_t;
@@ -123,7 +134,7 @@ void lse_construct(lse_t *ls, int n_cascades, int n_len_of_x, int n_len_of_z);
 void lse_insert(lse_t *ls, lse_float_t *xz);
 
 /* The function introduces ridge regularization with \la. Most reasonable \la
- * value is \n_len_of_x * \svd.max * \machine_epsilon.
+ * value is \n_len_of_x * \esv.max * \machine_epsilon.
  * */
 void lse_ridge(lse_t *ls, lse_float_t la);
 
@@ -149,7 +160,7 @@ void lse_std(lse_t *ls);
  * empty cascades of \R as temporal storage.
  *
  * */
-void lse_cond(lse_t *ls, int n_approx);
+void lse_esv(lse_t *ls, int n_approx);
 
 #endif /* _H_LSE_ */
 

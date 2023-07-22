@@ -1,9 +1,11 @@
 #include "lse.h"
 
+#if LSE_FAST_TRANSFORM != 0
 /* Define the maixmal allowed scale of the fast transformation. The input data
- * range is reduced by this number. Larger number allows us to do scaling rarely.
+ * range is reduced by this number. Large number allows us to do scaling rarely.
  * */
-#define LSE_DMAX 		((lse_float_t) 1048576.)
+#define LSE_DMAX 		((lse_float_t) 1048576)
+#endif /* LSE_FAST_TRANSFORM */
 
 /* Define what external math functions to use in LSE.
  * */
@@ -11,13 +13,24 @@
 #define lse_sqrtf(x)		__builtin_sqrtf(x)
 
 static void
+#if LSE_FAST_TRANSFORM != 0
 lse_qrupdate(lse_t *ls, lse_upper_t *rm, lse_float_t *xz, lse_float_t d0, int nz)
+#else /* LSE_FAST_TRANSFORM */
+lse_qrupdate(lse_t *ls, lse_upper_t *rm, lse_float_t *xz, int nz)
+#endif
 {
 	lse_float_t	*m = rm->m;
+#if LSE_FAST_TRANSFORM != 0
 	lse_float_t	*d = rm->d;
+#endif /* LSE_FAST_TRANSFORM */
 
-	lse_float_t	di, x0, xi, alpa, beta;
-	int		n, i, j, type;
+	lse_float_t	x0, xi, alpa, beta;
+	int		n, i, j;
+
+#if LSE_FAST_TRANSFORM != 0
+	lse_float_t	di;
+	int		type;
+#endif /* LSE_FAST_TRANSFORM */
 
 	n = (rm->len < rm->keep) ? rm->len : rm->keep;
 
@@ -35,8 +48,9 @@ lse_qrupdate(lse_t *ls, lse_upper_t *rm, lse_float_t *xz, lse_float_t d0, int nz
 		x0 = - xz[i];
 		xi = m[i];
 
-		if (x0 != (lse_float_t) 0.) {
+		if (x0 != (lse_float_t) 0) {
 
+#if LSE_FAST_TRANSFORM != 0
 			di = d[i];
 
 			/* We build the fast orthogonal transformation.
@@ -88,7 +102,7 @@ lse_qrupdate(lse_t *ls, lse_upper_t *rm, lse_float_t *xz, lse_float_t d0, int nz
 					 m[j] = xi;
 				}
 
-				x0 = (lse_float_t) 1. - alpa * beta;
+				x0 = (lse_float_t) 1 - alpa * beta;
 
 				d[i] = di * x0;
 				  d0 = d0 * x0;
@@ -105,7 +119,7 @@ lse_qrupdate(lse_t *ls, lse_upper_t *rm, lse_float_t *xz, lse_float_t d0, int nz
 					 m[j] = xi;
 				}
 
-				x0 = (lse_float_t) 1. - alpa * beta;
+				x0 = (lse_float_t) 1 - alpa * beta;
 
 				d[i] = d0 * x0;
 				  d0 = di * x0;
@@ -115,7 +129,7 @@ lse_qrupdate(lse_t *ls, lse_upper_t *rm, lse_float_t *xz, lse_float_t d0, int nz
 			 * */
 			if (d[i] > LSE_DMAX * LSE_DMAX) {
 
-				alpa = (lse_float_t) 1. / LSE_DMAX;
+				alpa = (lse_float_t) 1 / LSE_DMAX;
 
 				for (j = i; j < rm->len; ++j) {
 
@@ -123,12 +137,12 @@ lse_qrupdate(lse_t *ls, lse_upper_t *rm, lse_float_t *xz, lse_float_t d0, int nz
 					m[j] = x0 * alpa;
 				}
 
-				d[i] *= alpa * alpa;
+				d[i] *= (alpa * alpa);
 			}
 
 			if (d0 > LSE_DMAX * LSE_DMAX) {
 
-				alpa = (lse_float_t) 1. / LSE_DMAX;
+				alpa = (lse_float_t) 1 / LSE_DMAX;
 
 				for (j = i + 1; j < rm->len; ++j) {
 
@@ -136,8 +150,32 @@ lse_qrupdate(lse_t *ls, lse_upper_t *rm, lse_float_t *xz, lse_float_t d0, int nz
 					xz[j] = x0 * alpa;
 				}
 
-				d0 *= alpa * alpa;
+				d0 *= (alpa * alpa);
 			}
+#else /* LSE_FAST_TRANSFORM */
+
+			/* WARNING: We use NAIVE hypot implementation as it is
+			 * the fastest one and quite ulp-accurate.
+			 */
+			alpa = lse_sqrtf(x0 * x0 + xi * xi);
+			beta = (lse_float_t) 1 / alpa;
+
+			m[i] = alpa;
+
+			/* We build the orthogonal transformation.
+			 * */
+			alpa = x0 * beta;
+			beta = xi * beta;
+
+			for (j = i + 1; j < rm->len; ++j) {
+
+				xi = beta * m[j] - alpa * xz[j];
+				x0 = alpa * m[j] + beta * xz[j];
+
+				xz[j] = x0;
+				 m[j] = xi;
+			}
+#endif /* LSE_FAST_TRANSFORM */
 		}
 
 		m += rm->len;
@@ -152,7 +190,11 @@ lse_qrupdate(lse_t *ls, lse_upper_t *rm, lse_float_t *xz, lse_float_t d0, int nz
 			/* We merge the retained row-vector into the upper
 			 * cascade matrix before copying the new content.
 			 * */
+#if LSE_FAST_TRANSFORM != 0
 			lse_qrupdate(ls, rm + 1, m, d[n], n);
+#else /* LSE_FAST_TRANSFORM */
+			lse_qrupdate(ls, rm + 1, m, n);
+#endif
 		}
 
 		/* Copy the tail content.
@@ -160,7 +202,9 @@ lse_qrupdate(lse_t *ls, lse_upper_t *rm, lse_float_t *xz, lse_float_t d0, int nz
 		for (i = n; i < rm->len; ++i)
 			m[i] = xz[i];
 
+#if LSE_FAST_TRANSFORM != 0
 		d[n] = d0;
+#endif /* LSE_FAST_TRANSFORM */
 	}
 
 	rm->keep += 1;
@@ -188,7 +232,9 @@ static void
 lse_qrmerge(lse_t *ls, lse_upper_t *rm)
 {
 	lse_float_t	*m = rm->m;
+#if LSE_FAST_TRANSFORM != 0
 	lse_float_t	*d = rm->d;
+#endif /* LSE_FAST_TRANSFORM */
 
 	int		n0, i;
 
@@ -202,7 +248,11 @@ lse_qrmerge(lse_t *ls, lse_upper_t *rm)
 		/* We extract one by one the row-vectors from cascade
 		 * matrix and merge them into the upper cascade matrix.
 		 * */
+#if LSE_FAST_TRANSFORM != 0
 		lse_qrupdate(ls, rm + 1, m, d[i], i);
+#else /* LSE_FAST_TRANSFORM */
+		lse_qrupdate(ls, rm + 1, m, i);
+#endif
 
 		m += rm->len;
 	}
@@ -213,15 +263,19 @@ lse_qrmerge(lse_t *ls, lse_upper_t *rm)
 
 int lse_getsize(int n_cascades, int n_full)
 {
-	int		n_lse_len, n_vm_len;
+	int		n_lse_len, n_vma_len;
 
 	n_lse_len = sizeof(lse_t) - sizeof(((lse_t *) 0)->vm);
 
-	n_vm_len = n_cascades * n_full * (n_full + 1) / 2
-		 + n_cascades * n_full
-		 + n_full * n_full / 4 + n_full / 2 + 1;
+	n_vma_len = n_cascades * n_full * (n_full + 1) / 2
 
-	return n_lse_len + sizeof(lse_float_t) * n_vm_len;
+#if LSE_FAST_TRANSFORM != 0
+		  + n_cascades * n_full
+#endif /* LSE_FAST_TRANSFORM */
+
+		  + n_full * n_full / 4 + n_full / 2 + 1;
+
+	return n_lse_len + sizeof(lse_float_t) * n_vma_len;
 }
 
 void lse_construct(lse_t *ls, int n_cascades, int n_len_of_x, int n_len_of_z)
@@ -248,9 +302,10 @@ void lse_construct(lse_t *ls, int n_cascades, int n_len_of_x, int n_len_of_z)
 
 		vm += n_full * (n_full + 1) / 2;
 
+#if LSE_FAST_TRANSFORM != 0
 		ls->rm[i].d = vm;
-
 		vm += n_full;
+#endif /* LSE_FAST_TRANSFORM */
 	}
 
 	ls->sol.len = ls->n_len_of_x * ls->n_len_of_z;
@@ -259,13 +314,17 @@ void lse_construct(lse_t *ls, int n_cascades, int n_len_of_x, int n_len_of_z)
 	ls->std.len = ls->n_len_of_z;
 	ls->std.m = vm + ls->sol.len;
 
-	ls->svd.max = (lse_float_t) 0.;
-	ls->svd.min = (lse_float_t) 0.;
+	ls->esv.max = (lse_float_t) 0;
+	ls->esv.min = (lse_float_t) 0;
 }
 
 void lse_insert(lse_t *ls, lse_float_t *xz)
 {
-	lse_qrupdate(ls, ls->rm, xz, (lse_float_t) 1., 0);
+#if LSE_FAST_TRANSFORM != 0
+	lse_qrupdate(ls, ls->rm, xz, (lse_float_t) 1, 0);
+#else /* LSE_FAST_TRANSFORM */
+	lse_qrupdate(ls, ls->rm, xz, 0);
+#endif
 
 	ls->n_total += 1;
 }
@@ -283,9 +342,13 @@ void lse_ridge(lse_t *ls, lse_float_t la)
 		xz[i] = la;
 
 		for (j = i + 1; j < ls->rm[0].len; ++j)
-			xz[j] = (lse_float_t) 0.;
+			xz[j] = (lse_float_t) 0;
 
-		lse_qrupdate(ls, ls->rm, xz, (lse_float_t) 1., i);
+#if LSE_FAST_TRANSFORM != 0
+		lse_qrupdate(ls, ls->rm, xz, (lse_float_t) 1, i);
+#else /* LSE_FAST_TRANSFORM */
+		lse_qrupdate(ls, ls->rm, xz, 0);
+#endif
 	}
 }
 
@@ -336,10 +399,14 @@ lse_merge(lse_t *ls)
 		nul = rm->len * (rm->len + 1) / 2;
 
 		for (i = len; i < nul; ++i)
-			rm->m[i] = (lse_float_t) 0.;
+			rm->m[i] = (lse_float_t) 0;
 
+#if LSE_FAST_TRANSFORM != 0
 		for (i = rm->keep; i < rm->len; ++i)
-			rm->d[i] = (lse_float_t) 1.;
+			rm->d[i] = (lse_float_t) 1;
+#endif /* LSE_FAST_TRANSFORM */
+
+		rm->keep = rm->len;
 	}
 }
 
@@ -365,7 +432,7 @@ void lse_solve(lse_t *ls)
 
 		for (i = ls->n_len_of_x - 1; i >= 0; --i) {
 
-			u = (lse_float_t) 0.;
+			u = (lse_float_t) 0;
 
 			for (j = i + 1; j < ls->n_len_of_x; ++j)
 				u += sol[j] * m[j];
@@ -384,7 +451,11 @@ void lse_std(lse_t *ls)
 	lse_upper_t	*rm = ls->rm + ls->n_cascades - 1;
 
 	lse_float_t	*std = ls->std.m;
-	lse_float_t	*mq, *m, *d, u;
+	lse_float_t	*mq, *m, u, ratio;
+
+#if LSE_FAST_TRANSFORM != 0
+	lse_float_t	*d = rm->d + ls->n_len_of_x;
+#endif /* LSE_FAST_TRANSFORM */
 
 	int		i, j;
 
@@ -393,22 +464,32 @@ void lse_std(lse_t *ls)
 	mq = rm->m + ls->n_len_of_x * rm->len
 		- ls->n_len_of_x * (ls->n_len_of_x - 1) / 2;
 
-	d = rm->d + ls->n_len_of_x;
+	ratio = (lse_float_t) 1 / (lse_float_t) (ls->n_total - 1);
 
 	/* We calculate l2 norm over \Rz columns.
 	 * */
 	for (i = 0; i < ls->n_len_of_z; ++i) {
 
 		m = mq;
+
+#if LSE_FAST_TRANSFORM != 0
 		u = m[0] * m[0] / d[0];
+#else /* LSE_FAST_TRANSFORM */
+		u = m[0] * m[0];
+#endif
 
 		for (j = 1; j < i + 1; ++j) {
 
 			m += rm->len - (ls->n_len_of_x + j);
+
+#if LSE_FAST_TRANSFORM != 0
 			u += m[0] * m[0] / d[j];
+#else /* LSE_FAST_TRANSFORM */
+			u += m[0] * m[0];
+#endif
 		}
 
-		std[i] = lse_sqrtf(u / (lse_float_t) (ls->n_total - 1));
+		std[i] = lse_sqrtf(u * ratio);
 
 		mq += 1;
 	}
@@ -418,7 +499,10 @@ static void
 lse_qrstep(lse_t *ls, lse_upper_t *um, lse_upper_t *im, lse_float_t *vm)
 {
 	lse_float_t	*mq = im->m;
-	lse_float_t	*m, *d = um->d;
+#if LSE_FAST_TRANSFORM != 0
+	lse_float_t	*ud = um->d;
+#endif /* LSE_FAST_TRANSFORM */
+	lse_float_t	*m;
 
 	int		i, j;
 
@@ -439,23 +523,24 @@ lse_qrstep(lse_t *ls, lse_upper_t *um, lse_upper_t *im, lse_float_t *vm)
 		}
 
 		for (j = i + 1; j < um->len; ++j)
-			vm[j] = (lse_float_t) 0.;
+			vm[j] = (lse_float_t) 0;
 
-		lse_qrupdate(ls, um, vm, d[i], 0);
+#if LSE_FAST_TRANSFORM != 0
+		lse_qrupdate(ls, um, vm, ud[i], 0);
+#else /* LSE_FAST_TRANSFORM */
+		lse_qrupdate(ls, um, vm, 0);
+#endif
 
 		mq += 1;
 	}
 }
 
-void lse_cond(lse_t *ls, int n_approx)
+void lse_esv(lse_t *ls, int n_approx)
 {
 	lse_upper_t	um, im, *rm = ls->rm + ls->n_cascades - 1;
-	lse_float_t	*m, u, q;
+	lse_float_t	*m, u;
 
 	int		len, i;
-
-	if (n_approx < 1)
-		return;
 
 	lse_merge(ls);
 
@@ -480,26 +565,28 @@ void lse_cond(lse_t *ls, int n_approx)
 
 	m += ls->n_len_of_x * (ls->n_len_of_x + 1) / 2;
 
+#if LSE_FAST_TRANSFORM != 0
 	um.d = m;
-
 	m += ls->n_len_of_x;
+#endif /* LSE_FAST_TRANSFORM */
 
 	im.len = ls->n_len_of_x;
 	im.m = m;
 
 	m += ls->n_len_of_x * (ls->n_len_of_x + 1) / 2;
 
+#if LSE_FAST_TRANSFORM != 0
 	im.d = m;
-
 	m += ls->n_len_of_x;
+#endif /* LSE_FAST_TRANSFORM */
 
-	/*
-	 * */
+#if LSE_FAST_TRANSFORM != 0
 	for (i = 0; i < ls->n_len_of_x; ++i) {
 
-		um.d[i] = (lse_float_t) 1.;
+		um.d[i] = (lse_float_t) 1;
 		im.d[i] = rm->d[i];
 	}
+#endif /* LSE_FAST_TRANSFORM */
 
 	/* First step of QR algorithm.
 	 * */
@@ -524,17 +611,20 @@ void lse_cond(lse_t *ls, int n_approx)
 	 * */
 	for (i = 0; i < ls->n_len_of_x; ++i) {
 
-		q = lse_sqrtf(um.d[i] * im.d[i]);
-		u = lse_fabsf(m[0] / q);
+#if LSE_FAST_TRANSFORM != 0
+		u = lse_fabsf(m[0] / lse_sqrtf(um.d[i] * im.d[i]));
+#else /* LSE_FAST_TRANSFORM */
+		u = lse_fabsf(m[0]);
+#endif
 
 		if (i != 0) {
 
-			ls->svd.max = (ls->svd.max < u) ? u : ls->svd.max;
-			ls->svd.min = (ls->svd.min > u) ? u : ls->svd.min;
+			ls->esv.max = (ls->esv.max < u) ? u : ls->esv.max;
+			ls->esv.min = (ls->esv.min > u) ? u : ls->esv.min;
 		}
 		else {
-			ls->svd.max = u;
-			ls->svd.min = u;
+			ls->esv.max = u;
+			ls->esv.min = u;
 		}
 
 		m += um.len - i;
