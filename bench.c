@@ -473,11 +473,11 @@ void lse_random_test()
 
 	for (n = 0; n < 5000000; ++n) {
 
-		x[0] = lfg_rand() * 1.;
-		x[1] = lfg_rand() * 1.;
-		x[2] = lfg_rand() * 1.;
-		x[3] = lfg_rand() * 1.;
-		x[4] = lfg_rand() * 1.;
+		x[0] = lfg_urand() * 1.;
+		x[1] = lfg_urand() * 1.;
+		x[2] = lfg_urand() * 1.;
+		x[3] = lfg_urand() * 1.;
+		x[4] = lfg_urand() * 1.;
 
 		z[0] = 0.;
 		z[1] = 0.;
