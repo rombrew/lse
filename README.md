@@ -73,13 +73,14 @@ To get the final solution we merge all cascade \R(i) matrices into the one.
 
 	R = qrupdate([R(0); R(1); R(2); ...])
 
-We use fast Givens transformation to implement QR procedures. Thus the square
-root is not used to find the solution.
+We use fast Givens transformation to implement QR update procedure. Thus the
+square root function is not used to find the solution.
 
 ## Example
 
 See the API description in LSE header file and testbench code.
 
+```
 	lse_t       ls;
 	
 	lse_construct(&ls, LSE_CASCADE_MAX, 2, 1);
@@ -96,6 +97,7 @@ See the API description in LSE header file and testbench code.
 	lse_solve(&ls);
 	
 	printf("sol %.4f %.4f\n", ls.sol.m[0], ls.sol.m[1]);
+```
 
 ## Status
 
