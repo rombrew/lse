@@ -40,38 +40,38 @@ We use a well-known method based on QR decomposition.
 	X = [x(1); x(2); x(3); ...]
 	Z = [z(1); z(2); z(3); ...]
 
-	[Q,R] = qr([X Z], 0)
+	[Q,rm] = qr([X Z], 0)
 
-	    [Rx  S ]
-	R = [    Rz]
+	     [ RX  S  ]
+	rm = [     RZ ]
 
-	b = Rx \ S
+	b = RX \ S
 
-In this formulation we do not need the matrix \Q at all. And the matrix \R can
+In this formulation we do not need the matrix \Q at all. And the matrix \rm can
 be obtained by the sequential QR updating.
 
-	R = qrupdate([R; x(i) z(i)])
+	rm = qrupdate([rm; [x(i) z(i)]])
 
 Thus we do not need to store all dataset in a tall skinny matrix. But that is
 not all. On large dataset we loss precision more and more due to roundoff
 errors at each QR update. To overcome this we propose the cascading update.
 
-Keep aggregating data in \R(0) until number of aggregated rows reaches some
-threshold number \n. After that merge \R(0) into the next level matrix \R(1).
+Keep aggregating data in \rm(0) until number of aggregated rows reaches some
+threshold number \n. After that merge \rm(0) into the next level matrix \rm(1).
 
-	R(1) = qrupdate([R(1); R(0)])
+	rm(1) = qrupdate([rm(1); rm(0)])
 
-Then reset \R(0) and continue to aggregate data in \R(0). When number of
-aggregated rows in \R(i) reaches some threshold number \n we merge \R(i) into
-the next level matrix \R(i+1).
+Then reset \rm(0) and continue to aggregate data in \rm(0). When number of
+aggregated rows in \rm(i) reaches some threshold number \n we merge \rm(i) into
+the next level matrix \rm(i+1).
 
 The number of cascades is selected depending on desired error compensation and
 available amount of memory. The threshold number \n increases each time when
-top-level \R(i) matrix is updated to produce balanced cascades.
+top-level \rm(i) matrix is updated to produce balanced cascades.
 
-To get the final solution we merge all cascade \R(i) matrices into the one.
+To get the final solution we merge all cascade \rm(i) matrices into the one.
 
-	R = qrupdate([R(0); R(1); R(2); ...])
+	rm = qrupdate([rm(0); rm(1); rm(2); ...])
 
 We use fast Givens transformation to implement QR update procedure. Thus the
 square root function is not used to find the solution.

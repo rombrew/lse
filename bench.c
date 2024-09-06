@@ -225,7 +225,7 @@ void lse_basic_test()
 
 	lse_insert(&ls, v);
 
-	lse_esv(&ls, 4);
+	lse_esv(&ls, 2);
 
 	printf("\ncase  ---- basic ridge ----\n");
 
@@ -336,7 +336,7 @@ void lse_large_test(int n_full)
 
 void lse_advanced_test()
 {
-	lse_t		ls;
+	lse_t		ls, lb;
 	lse_float_t	v[LSE_FULL_MAX];
 
 	int		i;
@@ -347,13 +347,13 @@ void lse_advanced_test()
 
 		v[0] = (lse_float_t) 1.;
 		v[1] = (lse_float_t) (i % 50);
-		v[2] = (lse_float_t) - (i % 50);
+		v[2] = (lse_float_t) - (i % 20);
 
 		lse_insert(&ls, v);
 
 		v[0] = (lse_float_t) 1.;
 		v[1] = (lse_float_t) - (i % 50);
-		v[2] = (lse_float_t) (i % 50);
+		v[2] = (lse_float_t) (i % 20);
 
 		lse_insert(&ls, v);
 	}
@@ -363,6 +363,34 @@ void lse_advanced_test()
 	printf("\ncase  ---- advanced ----\n");
 
 	printf("sol  % .8lE % .8lE\n", ls.sol.m[0], ls.sol.m[1]);
+
+	LSE_assert_absolute(ls.sol.m[0], 0.);
+	LSE_assert_absolute(ls.sol.m[1], 0.);
+
+	lse_construct(&ls, LSE_CASCADE_MAX, 1, 2);
+
+	for (i = 0; i < 100000; ++i) {
+
+		v[0] = (lse_float_t) 1.;
+		v[1] = (lse_float_t) (i % 50);
+		v[2] = (lse_float_t) - (i % 20);
+
+		lse_insert(&ls, v);
+	}
+
+	lse_construct(&lb, LSE_CASCADE_MAX, 1, 2);
+
+	for (i = 0; i < 100000; ++i) {
+
+		v[0] = (lse_float_t) 1.;
+		v[1] = (lse_float_t) - (i % 50);
+		v[2] = (lse_float_t) (i % 20);
+
+		lse_insert(&lb, v);
+	}
+
+	lse_merge(&ls, &lb);
+	lse_solve(&ls);
 
 	LSE_assert_absolute(ls.sol.m[0], 0.);
 	LSE_assert_absolute(ls.sol.m[1], 0.);
@@ -535,7 +563,7 @@ void lse_random_test()
 			ls.std.m[0], ls.std.m[1], ls.std.m[2],
 			ls.std.m[3], ls.std.m[4]);
 
-	lse_esv(&ls, 4);
+	lse_esv(&ls, 2);
 
 	printf("cond % .8lE\n\n", ls.esv.max / ls.esv.min);
 }
