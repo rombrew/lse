@@ -9,12 +9,12 @@
 
 #define LSE_RM_TOP(ls)		((ls)->rm + (ls)->n_cascades - 1)
 
-/* Define branch prediction functions.
+/* Define built-in branch prediction functions.
  * */
 #define likely(x)               __builtin_expect(!!(x), 1)
 #define unlikely(x)             __builtin_expect(!!(x), 0)
 
-/* Define external math functions.
+/* Define which external math functions to use in LSE.
  * */
 #define lse_fabsf(x)		__builtin_fabsf(x)
 #define lse_sqrtf(x)		__builtin_sqrtf(x)
