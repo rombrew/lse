@@ -11,8 +11,8 @@
 
 /* Define built-in branch prediction functions.
  * */
-#define likely(x)               __builtin_expect(!!(x), 1)
-#define unlikely(x)             __builtin_expect(!!(x), 0)
+#define likely(x)		__builtin_expect(!!(x), 1)
+#define unlikely(x)		__builtin_expect(!!(x), 0)
 
 /* Define which external math functions to use in LSE.
  * */
