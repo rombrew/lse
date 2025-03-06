@@ -13,7 +13,7 @@ measurements.
 
 ## Features
 
-* Ordinary least squares (LS) solver using QR transformation.
+* Ordinary least squares (LS) solver using QR decomposition.
 * Low precision losses on large datasets.
 * Able to solve rank deficient ill-posed problem using l2 regularization.
 * Standard deviation (STD) estimate.
