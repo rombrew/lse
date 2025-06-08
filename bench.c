@@ -17,7 +17,7 @@
 
 void lse_basic_test()
 {
-	lse_t		ls;
+	lse_t		ls, lb;
 	lse_float_t	v[LSE_FULL_MAX];
 
 	lse_construct(&ls, 1, 4, 1);
@@ -61,6 +61,7 @@ void lse_basic_test()
 	LSE_assert_relative(ls.sol.m[3], 4.);
 
 	lse_construct(&ls, 1, 4, 1);
+	lse_nostd(&ls);
 
 	v[0] = (lse_float_t) 0.;
 	v[1] = (lse_float_t) - 3.E+30;
@@ -281,6 +282,40 @@ void lse_basic_test()
 	lse_std(&ls);
 
 	LSE_assert_relative(ls.std.m[0], 1. / sqrt(3.));
+
+	lse_construct(&ls, 3, 3, 1);
+	lse_nostd(&ls);
+
+	v[0] = (lse_float_t) 2.;
+	v[1] = (lse_float_t) -1.;
+	v[2] = (lse_float_t) 1.;
+	v[3] = (lse_float_t) 3.;
+
+	lse_insert(&ls, v);
+
+	v[0] = (lse_float_t) 1.;
+	v[1] = (lse_float_t) 1.;
+	v[2] = (lse_float_t) 2.;
+	v[3] = (lse_float_t) 9.;
+
+	lse_insert(&ls, v);
+
+	lse_construct(&lb, 2, 3, 1);
+	lse_nostd(&lb);
+
+	v[0] = (lse_float_t) -1.;
+	v[1] = (lse_float_t) -1.;
+	v[2] = (lse_float_t) 0.;
+	v[3] = (lse_float_t) -3.;
+
+	lse_insert(&lb, v);
+	lse_merge(&ls, &lb);
+
+	lse_solve(&ls);
+
+	LSE_assert_relative(ls.sol.m[0], 1.);
+	LSE_assert_relative(ls.sol.m[1], 2.);
+	LSE_assert_relative(ls.sol.m[2], 3.);
 }
 
 void lse_large_test(int n_full)
@@ -296,6 +331,7 @@ void lse_large_test(int n_full)
 	v = (lse_float_t *) malloc(n_full * sizeof(lse_float_t));
 
 	lse_construct(ls, LSE_CASCADE_MAX, n_full - 1, 1);
+	lse_nostd(ls);
 
 	for (n = 0; n < n_full - 1; ++n) {
 
@@ -336,12 +372,13 @@ void lse_large_test(int n_full)
 
 void lse_advanced_test()
 {
-	lse_t		ls, lb;
+	lse_t		ls;
 	lse_float_t	v[LSE_FULL_MAX];
 
 	int		i;
 
 	lse_construct(&ls, LSE_CASCADE_MAX, 1, 2);
+	lse_nostd(&ls);
 
 	for (i = 0; i < 100000; ++i) {
 
@@ -361,36 +398,6 @@ void lse_advanced_test()
 	lse_solve(&ls);
 
 	printf("\ncase  ---- advanced ----\n");
-
-	printf("sol  % .8lE % .8lE\n", ls.sol.m[0], ls.sol.m[1]);
-
-	LSE_assert_absolute(ls.sol.m[0], 0.);
-	LSE_assert_absolute(ls.sol.m[1], 0.);
-
-	lse_construct(&ls, LSE_CASCADE_MAX, 1, 2);
-
-	for (i = 0; i < 100000; ++i) {
-
-		v[0] = (lse_float_t) 1.;
-		v[1] = (lse_float_t) (i % 50);
-		v[2] = (lse_float_t) - (i % 20);
-
-		lse_insert(&ls, v);
-	}
-
-	lse_construct(&lb, LSE_CASCADE_MAX, 1, 2);
-
-	for (i = 0; i < 100000; ++i) {
-
-		v[0] = (lse_float_t) 1.;
-		v[1] = (lse_float_t) - (i % 50);
-		v[2] = (lse_float_t) (i % 20);
-
-		lse_insert(&lb, v);
-	}
-
-	lse_merge(&ls, &lb);
-	lse_solve(&ls);
 
 	LSE_assert_absolute(ls.sol.m[0], 0.);
 	LSE_assert_absolute(ls.sol.m[1], 0.);

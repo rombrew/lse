@@ -1,6 +1,5 @@
 BUILD	?= /tmp/lse
-
-BENCH	= $(BUILD)/bench
+TARGET	= $(BUILD)/bench
 
 CC	= gcc
 LD	= gcc
@@ -20,26 +19,24 @@ CFLAGS  += -fno-math-errno \
 
 LFLAGS	= -lm
 
-OBJS	= bench.o lse.o lfg.o
+OBJS = $(addprefix $(BUILD)/, bench.o lse.o lfg.o)
 
-BENCH_OBJS = $(addprefix $(BUILD)/, $(OBJS))
-
-all: $(BENCH)
+all: $(TARGET)
 
 $(BUILD)/%.o: %.c
 	@ echo "  CC    " $<
 	@ $(MK) $(dir $@)
 	@ $(CC) -c $(CFLAGS) -MMD -o $@ $<
 
-$(BENCH): $(BENCH_OBJS)
+$(TARGET): $(OBJS)
 	@ echo "  LD    " $(notdir $@)
 	@ $(LD) $(CFLAGS) -o $@ $^ $(LFLAGS)
 
-run: $(BENCH)
+run: $(TARGET)
 	@ echo "  RUN	" $(notdir $<)
 	@ $<
 
-debug: $(BENCH)
+debug: $(TARGET)
 	@ echo "  GDB	" $(notdir $<)
 	@ $(GDB) $<
 
