@@ -44,7 +44,14 @@ lse_qrupdate(lse_t *ls, lse_upper_t *rm, lse_float_t *xz, int nz)
 	 * */
 	if (unlikely(nz > 0)) {
 
-		m += nz * rm->len - nz * (nz - 1) / 2;
+		if (likely(n >= nz)) {
+
+			m += nz * rm->len - nz * (nz - 1) / 2;
+		}
+		else if (unlikely(n < rm->rows)) {
+
+			m += n * rm->len - n * (n - 1) / 2;
+		}
 	}
 
 	for (i = nz; i < n; ++i) {
@@ -178,10 +185,20 @@ lse_qrupdate(lse_t *ls, lse_upper_t *rm, lse_float_t *xz, int nz)
 #endif
 		}
 
-		/* Copy the tail content.
-		 * */
-		for (i = n; i < rm->len; ++i)
-			m[i] = xz[i];
+		if (likely(n >= nz)) {
+
+			/* Copy the tail content.
+			 * */
+			for (i = n; i < rm->len; ++i)
+				m[i] = xz[i];
+		}
+		else {
+			for (i = n; i < nz; ++i)
+				m[i] = (lse_float_t) 0;
+
+			for (i = nz; i < rm->len; ++i)
+				m[i] = xz[i];
+		}
 
 #if LSE_FAST_GIVENS != 0
 		d[n] = d0;
@@ -218,12 +235,12 @@ lse_qrmerge(lse_t *ls, lse_upper_t *rm, lse_upper_t *um)
 	lse_float_t	*d = um->d;
 #endif /* LSE_FAST_GIVENS */
 
-	int		n0, i;
+	int		n, i;
 
-	n0 = (um->lazy != 0) ? um->rows
+	n = (um->lazy != 0) ? um->rows
 		: (um->rows < um->keep) ? um->rows : um->keep;
 
-	for (i = 0; i < n0; ++i) {
+	for (i = 0; i < n; ++i) {
 
 		m += - i;
 
@@ -290,7 +307,7 @@ lse_qrstep(lse_t *ls, lse_upper_t *um, lse_upper_t *im, lse_float_t *u)
 	um->keep = 0;
 	um->lazy = 0;
 
-	/* Here we transpose the input matrix \im and bring it to the
+	/* We transpose the input matrix \im and bring it to the
 	 * upper-triangular form again and store into \um.
 	 * */
 	for (i = 0; i < um->rows; ++i) {
@@ -407,7 +424,7 @@ void lse_ridge(lse_t *ls, lse_float_t la)
 
 	int		i, j;
 
-	/* Add bias using the unity matrix multiplied by \la.
+	/* We add bias using the identity matrix multiplied by \la.
 	 * */
 	for (i = 0; i < ls->n_len_of_x; ++i) {
 
@@ -428,18 +445,18 @@ void lse_forget(lse_t *ls, lse_float_t la)
 {
 	lse_upper_t	*rm;
 
-	int		n0, len, i, j;
+	int		n, len, i, j;
 
 	for (i = 0; i < ls->n_cascades; ++i) {
 
 		rm = &ls->rm[i];
 
-		n0 = (rm->lazy != 0) ? rm->rows
+		n = (rm->lazy != 0) ? rm->rows
 			: (rm->rows < rm->keep) ? rm->rows : rm->keep;
 
-		if (n0 != 0) {
+		if (n != 0) {
 
-			len = n0 * rm->len - n0 * (n0 - 1) / 2;
+			len = n * rm->len - n * (n - 1) / 2;
 
 			/* We just scale \rm matrices with factor \la.
 			 * */
