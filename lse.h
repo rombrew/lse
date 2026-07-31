@@ -101,7 +101,7 @@ typedef struct {
 	 * */
 	lse_row_t	std;
 
-	/* Approximate extremal singular values of \RX.
+	/* Extremal singular values of \RX.
 	 * */
 	struct {
 
